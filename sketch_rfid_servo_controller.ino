@@ -12,6 +12,8 @@ Servo myservo;          // create Servo object to control a servo
 const int servo_pin = 5;// servo controll pin should be connected to pin #5 on an arduino mega board
 const char uid_stored[] = "F684EE96"; // The only serial number or uid allowed to turn the servo
 int pos = 0;    // variable to store the servo position
+int pos_lock = 150; // variable to store the locked servo position
+int pos_unlock = 70; // variable to store the unlocked servo position
 MFRC522 rfid(SS_PIN, RST_PIN);
 
 void setup() {
@@ -68,17 +70,13 @@ void loop() {
   // Comparison
   if (strcmp(uid_stored, uid_string) == 0) {
     // The strings are equal
-    Serial.println("Permit");
-    for (pos = 0; pos <= 180; pos += 1) { // goes from 0 degrees to 180 degrees
-      // in steps of 1 degree
-      myservo.write(pos);              // tell servo to go to position in variable 'pos'
-      delay(15);                       // waits 15 ms for the servo to reach the position
-    }
-    delay(5000);                       // waits 5 s
-    for (pos = 180; pos >= 0; pos -= 1) { // goes from 180 degrees to 0 degrees
-      myservo.write(pos);              // tell servo to go to position in variable 'pos'
-      delay(15);                       // waits 15 ms for the servo to reach the position
-    }
+    Serial.println("Permit: unlocked for 15 seconds. Halting PICC.");
+    // Halt PICC
+    rfid.PICC_HaltA();
+    unlock();
+    delay(15000);                       // waits 15 s
+    lock();
+    Serial.println("Locked. Awaiting input.");
   } else {
     // The strings are different
     Serial.println("Deny");
@@ -86,4 +84,19 @@ void loop() {
 
   // Halt PICC
   rfid.PICC_HaltA();
+}
+
+void unlock() {
+  for (pos = pos_lock; pos >= pos_unlock; pos -= 1) { // goes from 150 degrees to 60 degrees
+    // in steps of 1 degree
+    myservo.write(pos);              // tell servo to go to position in variable 'pos'
+    delay(15);                       // waits 15 ms for the servo to reach the position
+  }
+}
+
+void lock() {
+  for (pos = pos_unlock; pos <= pos_lock; pos += 1) { // goes from 60 degrees to 150 degrees
+    myservo.write(pos);              // tell servo to go to position in variable 'pos'
+    delay(15);                       // waits 15 ms for the servo to reach the position
+  }
 }
